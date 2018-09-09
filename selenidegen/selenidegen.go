@@ -10,20 +10,26 @@ import (
 )
 
 func locator(target string) (string, error) {
-	switch {
-	case strings.HasPrefix(target, "id"):
-		return fmt.Sprintf("\"#%s\"", strings.TrimPrefix(target, "id=")), nil
-	case strings.HasPrefix(target, "name"):
-		return fmt.Sprintf("byName(\"%s\")", strings.TrimPrefix(target, "name=")), nil
-	case strings.HasPrefix(target, "css"):
-		return fmt.Sprintf("\"%s\"", strings.TrimPrefix(target, "css=")), nil
-	case strings.HasPrefix(target, "xpath"):
-		return fmt.Sprintf("byXpath(\"%s\")", strings.TrimPrefix(target, "xpath=")), nil
-	case strings.HasPrefix(target, "index"):
-		return strings.TrimPrefix(target, "index="), nil
-	default:
+	locatorMap := map[string]string{
+		"id":    "\"#%s\"",
+		"name":  "byName(\"%s\")",
+		"css":   "\"%s\"",
+		"xpath": "byXpath(\"%s\")",
+		"index": "%s",
+	}
+
+	targetArray := strings.Split(target, "=")
+	if len(targetArray) != 2 {
+		return target, nil
+	}
+	kind := targetArray[0]
+	locator := targetArray[1]
+
+	fmtStr, ok := locatorMap[kind]
+	if ok == false {
 		return "", fmt.Errorf("Invalid Locator: %s", target)
 	}
+	return fmt.Sprintf(fmtStr, locator), nil
 }
 
 type ErrUnknownCommand struct {
@@ -50,21 +56,21 @@ func GenerateJava(side side.Side, className string) (javacode []string, err erro
 	h := "    "
 	javacode = append(javacode, h+"@BeforeEach\n")
 	javacode = append(javacode, h+"public void setup() {\n")
-	javacode = append(javacode, h+h+"Configuration.baseUrl=\""+side.Url+"\";\n")
-	javacode = append(javacode, h+h+"Configuration.browser=WebDriverRunner.CHROME;\n")
+	javacode = append(javacode, h+h+"Configuration.baseUrl = \""+side.Url+"\";\n")
+	javacode = append(javacode, h+h+"Configuration.browser = WebDriverRunner.CHROME;\n")
 	javacode = append(javacode, h+"}\n\n")
 	for _, test := range side.Tests {
 		javacode = append(javacode, h+"@Test\n")
 		javacode = append(javacode, h+"public void "+test.Name+"() {\n")
 		for _, command := range test.Commands {
 			locator, errLocator := locator(command.Target)
-			if command.Command != "open" && errLocator != nil {
+			if errLocator != nil {
 				err = errLocator
 				return
 			}
 			switch command.Command {
 			case "open":
-				javacode = append(javacode, fmt.Sprintf("%sopen(\"%s\");\n", h+h, command.Target))
+				javacode = append(javacode, fmt.Sprintf("%sopen(\"%s\");\n", h+h, locator))
 			case "selectFrame":
 				javacode = append(javacode, fmt.Sprintf("%sswitchTo().frame(%s);\n", h+h, locator))
 			case "click":
