@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"./selenidegen"
+	"./genselenide"
 	"./side"
 )
 
@@ -19,7 +19,7 @@ func writeSideToJava(side side.Side) error {
 	}
 	defer file.Close()
 
-	javacode, err3 := selenidegen.GenerateJava(side, className)
+	javacode, err3 := genselenide.GenerateJava(side, className)
 	if err3 != nil {
 		log.Fatal(err3)
 		return err3

@@ -1,4 +1,4 @@
-package selenidegen
+package genselenide
 
 import (
 	"fmt"
