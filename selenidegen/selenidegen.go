@@ -50,6 +50,14 @@ func translateSendKeyValue(value string) (string, error) {
 }
 
 func GenerateJava(side side.Side, className string) (javacode []string, err error) {
+	javaCodeMap := map[string]string{
+		"open":        "%sopen(\"%s\")%s",
+		"selectFrame": "%sswitchTo().frame(%s)",
+		"click":       "%s$(%s).click()%s",
+		"type":        "%s$(%s).val(\"%s\")",
+		"sendKeys":    "%s$(%s).val(\"%s\")",
+	}
+
 	javacode = generateJavaHeader()
 
 	javacode = append(javacode, "public class "+className+" {\n")
@@ -68,26 +76,25 @@ func GenerateJava(side side.Side, className string) (javacode []string, err erro
 				err = errLocator
 				return
 			}
-			switch command.Command {
-			case "open":
-				javacode = append(javacode, fmt.Sprintf("%sopen(\"%s\");\n", h+h, locator))
-			case "selectFrame":
-				javacode = append(javacode, fmt.Sprintf("%sswitchTo().frame(%s);\n", h+h, locator))
-			case "click":
-				javacode = append(javacode, fmt.Sprintf("%s$(%s).click();\n", h+h, locator))
-			case "type":
-				javacode = append(javacode, fmt.Sprintf("%s$(%s).val(\"%s\");\n", h+h, locator, command.Value))
-			case "sendKeys":
-				var keycode string
-				keycode, err = translateSendKeyValue(command.Value)
-				if err != nil {
-					return
-				}
-				javacode = append(javacode, fmt.Sprintf("%s$(%s).val(\"%s\");\n", h+h, locator, keycode))
-			default:
+			fmtStr, ok := javaCodeMap[command.Command]
+			if ok == false {
 				err = &ErrUnknownCommand{command: command.Command, value: command.Value}
 				return
 			}
+			var value string
+			switch command.Command {
+			case "sendKeys":
+				value, err = translateSendKeyValue(command.Value)
+				if err != nil {
+					return
+				}
+			case "open":
+			case "click":
+				value = ""
+			default:
+				value = command.Value
+			}
+			javacode = append(javacode, fmt.Sprintf(fmtStr+";\n", h+h, locator, value))
 		}
 		javacode = append(javacode, h+"}\n")
 
