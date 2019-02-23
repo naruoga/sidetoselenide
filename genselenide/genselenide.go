@@ -1,7 +1,24 @@
-package genselenide
+package genselenid
+
+/*
+ * This file is part of sidetoselenide.
+ * sidetoselenide is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * sidetoselenide is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with sidetoselenide.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/MakeNowJust/heredoc"
@@ -49,13 +66,34 @@ func translateSendKeyValue(value string) (string, error) {
 	}
 }
 
+func translateSelectOptionMethod(value string) (string, error) {
+	splitted := strings.Split(value, "=")
+	if len(splitted) < 2 {
+		return "", fmt.Errorf("Error: invalid select option: %s", value)
+	}
+	var optionMethod string
+	switch splitted[0] {
+	case "label":
+		optionMethod = "selectOption(\"" + splitted[1] + "\")"
+	default:
+		return "", fmt.Errorf("Error: unsupported select option: %s", value)
+	}
+	return optionMethod, nil
+}
+
 func GenerateJava(side side.Side, className string) (javacode []string, err error) {
 	javaCodeMap := map[string]string{
-		"open":        "%sopen(\"%s\")%s",
-		"selectFrame": "%sswitchTo().frame(%s)",
-		"click":       "%s$(%s).click()%s",
-		"type":        "%s$(%s).val(\"%s\")",
-		"sendKeys":    "%s$(%s).val(\"%s\")",
+		"open":          "%sopen(\"%s\")%s",
+		"selectFrame":   "%sswitchTo().frame(%s)",
+		"click":         "%s$(%s).click()%s",
+		"type":          "%s$(%s).val(\"%s\")",
+		"sendKeys":      "%s$(%s).val(\"%s\")",
+		"setWindowSize": "%sConfiguration.browserSize = \"%s\"%s",
+		"select":        "%s$(%s).%s",
+		"verifyText":    "%s$(%s).shouldHave(text(\"%s\"))",
+		"mouseDownAt":   "",
+		"mouseMoveAt":   "",
+		"mouseUpAt":     "",
 	}
 
 	javacode = generateJavaHeader()
@@ -83,18 +121,23 @@ func GenerateJava(side side.Side, className string) (javacode []string, err erro
 			}
 			var value string
 			switch command.Command {
+			case "mouseDownAt", "mouseMoveAt", "mouseUpAt":
+				continue // 今は無視する
 			case "sendKeys":
 				value, err = translateSendKeyValue(command.Value)
 				if err != nil {
 					return
 				}
-			case "open":
-			case "click":
+			case "select":
+				value, err = translateSelectOptionMethod(command.Value)
+			case "open", "click", "setWindowSize":
 				value = ""
 			default:
 				value = command.Value
 			}
-			javacode = append(javacode, fmt.Sprintf(fmtStr+";\n", h+h, locator, value))
+			line := fmt.Sprintf(fmtStr+";\n", h+h, locator, value)
+			log.Printf("%s.%s: %s", command.Command, command.Value, line)
+			javacode = append(javacode, line)
 		}
 		javacode = append(javacode, h+"}\n")
 

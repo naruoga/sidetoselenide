@@ -1,8 +1,15 @@
-# sidetoselenide: Selenide code generator from *.side
+# sidetoselenide: Selenide code generator from `*.side`
 
-just a mockup, my first golang code.
+This is a toy project to learn Go language.
 
-generate Selenide + JUnit5 java code snippet from Selenium IDE's `*.side` format.
+Generate Selenide + JUnit5 java code snippet from Selenium IDE's `*.side` format.
+
+> Note: this project does not to aim whole commands of Selenium IDE,
+> just focused on it's capture-and-replay features.
+> On the other words, I have no plan to support:
+> 
+> - variables
+> - flow control commands (if, loop, ...)
 
 ## usage
 
@@ -10,10 +17,12 @@ generate Selenide + JUnit5 java code snippet from Selenium IDE's `*.side` format
 go run sidetoselenide.go foo.side
 ```
 
+## License
+
+see [LICENSE](LICENSE)
+
 ## todo
 
-- devide one big `.go` file into several module files
-- improve packaging
 - support more commands
 - support more locators
 - move supported commands / locators to file (JSON or else)

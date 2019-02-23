@@ -42,7 +42,6 @@ func main() {
 			if err != nil {
 				log.Fatal(err)
 			}
-			log.Println(filename, side)
 			writeSideToJava(side)
 		}
 	}
